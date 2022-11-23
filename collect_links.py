@@ -215,12 +215,27 @@ class CollectLinks:
 
         last_scroll = 0
         scroll_patience = 0
+        state = ''
+        patience = 0
 
         while True:
             try:
-                xpath = '//div[@id="islsp"]//div[@class="v4dQwb"]'
+                xpath = '//div[@class = "tvh9oe BIB1wf"]'
+                div_changed = self.browser.find_element(By.XPATH, xpath)
+                if state == div_changed.get_attribute('data-tbnid'):
+                    print('으악')
+                    patience+=1
+                    if patience>30:
+                        break
+                else:
+                    state = div_changed.get_attribute('data-tbnid')
+                    patience=0
+
+
+                xpath = '//div[@id="islsp"]//div[@class="v4dQwb"]' # class : l39u4d
                 div_box = self.browser.find_element(By.XPATH, xpath)
                 self.highlight(div_box)
+
 
                 xpath = '//img[@class="n3VNCb"]'
                 img = div_box.find_element(By.XPATH, xpath)
@@ -232,13 +247,12 @@ class CollectLinks:
                 # Wait for image to load. If not it will display base64 code.
                 while str(loading_bar.get_attribute('style')) != 'display: none;':
                     time.sleep(0.1)
-
+                
                 src = img.get_attribute('src')
-
                 if src is not None:
                     links.append(src)
                     print('%d: %s' % (count, src))
-                    count += 1
+                    count+=1
 
             except StaleElementReferenceException:
                 # print('[Expected Exception - StaleElementReferenceException]')
@@ -246,25 +260,17 @@ class CollectLinks:
             except Exception as e:
                 print('[Exception occurred while collecting links from google_full] {}'.format(e))
 
-            scroll = self.get_scroll()
-            if scroll == last_scroll:
-                scroll_patience += 1
-            else:
-                scroll_patience = 0
-                last_scroll = scroll
 
-            if scroll_patience >= 30:
-                break
 
             elem.send_keys(Keys.RIGHT)
-
+        
         links = self.remove_duplicates(links)
 
         print('Collect links done. Site: {}, Keyword: {}, Total: {}'.format('google_full', keyword, len(links)))
         self.browser.close()
 
         return links
-
+      
     def naver_full(self, keyword, add_url=""):
         print('[Full Resolution Mode]')
 
@@ -284,7 +290,7 @@ class CollectLinks:
 
         last_scroll = 0
         scroll_patience = 0
-
+        patience = 0
         while True:
             try:
                 xpath = '//div[@class="image _imageBox"]/img[@class="_image"]'
@@ -293,11 +299,13 @@ class CollectLinks:
                 for img in imgs:
                     self.highlight(img)
                     src = img.get_attribute('src')
-
                     if src not in links and src is not None:
                         links.append(src)
                         print('%d: %s' % (count, src))
-                        count += 1
+                        count+=1
+                        patience=0
+                    else:
+                        patience +=1
 
             except StaleElementReferenceException:
                 # print('[Expected Exception - StaleElementReferenceException]')
@@ -314,7 +322,8 @@ class CollectLinks:
 
             if scroll_patience >= 100:
                 break
-
+            if patience >= 100:
+                break
             elem.send_keys(Keys.RIGHT)
             elem.send_keys(Keys.PAGE_DOWN)
 
@@ -324,7 +333,6 @@ class CollectLinks:
         self.browser.close()
 
         return links
-
 
 if __name__ == '__main__':
     collect = CollectLinks()
